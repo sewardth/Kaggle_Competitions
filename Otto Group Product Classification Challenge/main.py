@@ -26,62 +26,50 @@ X_train, X_test, y_train, y_test = cross_validation.train_test_split(
      features_train, target_train, test_size=0.3, random_state=0)
 
 #reduce training set for speed
-X_train = X_train[:500]
-y_train = y_train[:500]
+X_train = X_train[:5000]
+y_train = y_train[:5000]
+
+#random forest creation
+clf = ensemble.RandomForestClassifier(n_estimators=1000)
+clf.fit(features_train, target_train)
+#predict = clf.predict(X_test)
+print accuracy_score(y_test,predict)
+print clf.predict_proba(X_test)[0]
 
 
-#AdaBoost model creation     
-#adaBoost_clf = ensemble.AdaBoostClassifier(n_estimators=100)
-#adaBoost_clf.fit(X_train,y_train)
-#adaBoost_predict = adaBoost_clf.predict(X_test)
-
-
-#print adaBoost_clf.predict_proba(X_test)
-
-
-
-#SVM model creation without probabilities
-#clf = svm.SVC(kernel='linear')
-#clf.fit(features_train,target_train)
-
-#SVM model with probabilities
-#svmProb_clf = svm.SVC(kernel='linear', probability=True)
-#svmProb_clf.fit(X_train,y_train)
-#svmProb_predict = svmProb_clf.predict(X_test)
 
 
 #gridsearch svm classifer
-#parameters = {'kernel':['linear', 'rbf', 'poly','sigmoid'], 'C':[1, 10,1000,10000,100000]}
-#grid_svm = svm.SVC()
+#parameters = {'n_estimators':[10,50,100,1000], 'criterion':['gini','entropy'],'max_features':['auto',None], 'min_samples_split':[2,10,30,50]}
+#grid_svm = ensemble.RandomForestClassifier()
 #grid_clf = grid_search.GridSearchCV(grid_svm,parameters)
 #grid_clf.fit(X_train,y_train)
-
-#print 'score for AdaBoost: ' + str(accuracy_score(y_test,adaBoost_predict))
-#print 'score for SVM:' + str(accuracy_score(y_test,svm_predict))
-#print 'score for SVM_Probs:' + str(accuracy_score(y_test,svmProb_predict))
 
 #print 'Grid Search Results: '
 #print grid_clf.best_estimator_
 
 
 
-
+#
 submission = submission_test['id']
 submission_test = submission_test.drop('id',1)
 prediction = clf.predict(submission_test)
-sub = pd.DataFrame({'id':submission,
-                    'Class_1':(pd.Series(np.array([1. if x ==1. else 0. for x in prediction]))),
-                    'Class_2':(pd.Series(np.array([1. if x ==2. else 0. for x in prediction]))),
-                    'Class_3':(pd.Series(np.array([1. if x ==3. else 0. for x in prediction]))),
-                    'Class_4':(pd.Series(np.array([1. if x ==4. else 0. for x in prediction]))),
-                    'Class_5':(pd.Series(np.array([1. if x ==5. else 0. for x in prediction]))),
-                    'Class_6':(pd.Series(np.array([1. if x ==6. else 0. for x in prediction]))),
-                    'Class_7':(pd.Series(np.array([1. if x ==7. else 0. for x in prediction]))),
-                    'Class_8':(pd.Series(np.array([1. if x ==8. else 0. for x in prediction]))),
-                    'Class_9':(pd.Series(np.array([1. if x ==9. else 0. for x in prediction])))})
-print sub
 
-sub.to_csv('svm.csv', index = False)
+
+sub = pd.DataFrame({'id':submission,
+                    'Class_1':(pd.Series(np.array([x[0] for x in prediction]))),
+                    'Class_2':(pd.Series(np.array([x[1] for x in prediction]))),
+                    'Class_3':(pd.Series(np.array([x[2] for x in prediction]))),
+                    'Class_4':(pd.Series(np.array([x[3] for x in prediction]))),
+                    'Class_5':(pd.Series(np.array([x[4] for x in prediction]))),
+                    'Class_6':(pd.Series(np.array([x[5] for x in prediction]))),
+                    'Class_7':(pd.Series(np.array([x[6] for x in prediction]))),
+                    'Class_8':(pd.Series(np.array([x[7] for x in prediction]))),
+                    'Class_9':(pd.Series(np.array([x[8] for x in prediction])))})
+#print sub
+
+headers =['id','Class_1','Class_2','Class_3','Class_4','Class_5','Class_6','Class_7','Class_8','Class_9']
+sub.to_csv('svm.csv', index = False, cols=headers)
 
 
     
