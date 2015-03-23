@@ -7,6 +7,7 @@ from sklearn.metrics import accuracy_score
 from sklearn import svm
 from sklearn import grid_search
 import numpy as np
+from sklearn import preprocessing
 
 
 
@@ -15,26 +16,43 @@ train_data = pd.DataFrame(pd.read_csv('train.csv'))
 submission_test = pd.DataFrame(pd.read_csv('test.csv'))
 
 target_train = train_data['target']
-features_train =  train_data.drop('target',1).drop('id',1)
+features_train = train_data.drop('target',1).drop('id',1).values.astype(float)
+
+
+#scale data
+#scaler = preprocessing.MinMaxScaler()
+#features_train = scaler.fit_transform(features_train)
 
 #convert string targets to numeric
-target_train = target_train.map(lambda x: float(x.replace('Class_','')))
+target_train = target_train.map(lambda x: float(x.replace('Class_',''))).values
 
 
-#create test and training sets
+##create test and training sets
 X_train, X_test, y_train, y_test = cross_validation.train_test_split(
-     features_train, target_train, test_size=0.3, random_state=0)
+     features_train, target_train, test_size=0.3, random_state=4)
+
+
+
+
+
+
 
 #reduce training set for speed
-X_train = X_train[:5000]
-y_train = y_train[:5000]
+#X_train = X_train[:10000]
+#y_train = y_train[:10000]
+
+#SVM classifer
+clf = svm.SVC(kernel ='linear',probability =True)
+clf.fit(features_train,target_train)
+predict = clf.predict(X_test)
+print accuracy_score(y_test,predict)
 
 #random forest creation
-clf = ensemble.RandomForestClassifier(n_estimators=1000)
-clf.fit(features_train, target_train)
-#predict = clf.predict(X_test)
-print accuracy_score(y_test,predict)
-print clf.predict_proba(X_test)[0]
+#clf = ensemble.RandomForestClassifier(n_estimators=1000)
+#clf.fit(features_train, target_train)
+##predict = clf.predict(X_test)
+#print accuracy_score(y_test,predict)
+#print clf.predict_proba(X_test)[0]
 
 
 
@@ -44,7 +62,7 @@ print clf.predict_proba(X_test)[0]
 #grid_svm = ensemble.RandomForestClassifier()
 #grid_clf = grid_search.GridSearchCV(grid_svm,parameters)
 #grid_clf.fit(X_train,y_train)
-
+##
 #print 'Grid Search Results: '
 #print grid_clf.best_estimator_
 
@@ -53,7 +71,8 @@ print clf.predict_proba(X_test)[0]
 #
 submission = submission_test['id']
 submission_test = submission_test.drop('id',1)
-prediction = clf.predict(submission_test)
+#submission_test = scaler.fit_transform(submission_test)
+prediction = np.around(clf.predict_proba(submission_test),decimals=6)
 
 
 sub = pd.DataFrame({'id':submission,
@@ -67,9 +86,8 @@ sub = pd.DataFrame({'id':submission,
                     'Class_8':(pd.Series(np.array([x[7] for x in prediction]))),
                     'Class_9':(pd.Series(np.array([x[8] for x in prediction])))})
 #print sub
-
 headers =['id','Class_1','Class_2','Class_3','Class_4','Class_5','Class_6','Class_7','Class_8','Class_9']
-sub.to_csv('svm.csv', index = False, cols=headers)
+sub.to_csv('svmProb.csv', index = False, cols=headers)
 
 
     
