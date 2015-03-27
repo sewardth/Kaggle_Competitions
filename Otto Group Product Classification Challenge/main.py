@@ -29,18 +29,18 @@ features_train = preprocessing.normalize(train_data.drop('target',1).drop('id',1
 scaler = preprocessing.MinMaxScaler()
 features_train = scaler.fit_transform(features_train)
 
-pca = PCA(n_components='mle', whiten=True)
-features_train = pca.fit_transform(features_train)
+#pca = PCA(n_components='mle', whiten=True)
+#features_train = pca.fit_transform(features_train)
 
 #convert string targets to numeric
 target_train = target_train.map(lambda x: float(x.replace('Class_',''))).values
 
 #Neural Net
-model = BernoulliRBM()
-model.fit_transform(features_train)
+#model = BernoulliRBM()
+#model.fit_transform(features_train)
 
-#X_train, X_test, y_train, y_test = cross_validation.train_test_split(
-#     features_train, target_train, test_size=0.3, random_state=4)
+X_train, X_test, y_train, y_test = cross_validation.train_test_split(
+     features_train, target_train, test_size=0.3, random_state=4)
 
 
 
@@ -62,10 +62,10 @@ model.fit_transform(features_train)
 
 
 #random forest creation
-clf = ensemble.RandomForestClassifier(n_estimators=1000, n_jobs=-1)
+clf = ensemble.GradientBoostingClassifier(n_estimators=250, max_depth=2, min_samples_split=1)
 clf.fit(features_train, target_train)
-#predict = clf.predict(X_test)
-#print accuracy_score(y_test,predict)
+predict = clf.predict(X_test)
+print accuracy_score(y_test,predict)
 scores = cross_validation.cross_val_score(clf,features_train,target_train)
 print scores.mean()
 
@@ -73,9 +73,9 @@ print scores.mean()
 
 
 ##gridsearch svm classifer
-#parameters = {'loss':['hinge','log','modified_huber','squared_hinge','perceptron'], 'penalty':['l2','elasticnet']}
+#parameters = {'max_depth':[1,2,3,4,5], 'min_samples_leaf':[1,2,3]}
 #grid_svm =  SGDClassifier()
-#grid_clf = grid_search.GridSearchCV(grid_svm,parameters)
+#grid_clf = grid_search.GridSearchCV(clf,parameters)
 #grid_clf.fit(X_train,y_train)
 ###
 #print 'Grid Search Results: '
