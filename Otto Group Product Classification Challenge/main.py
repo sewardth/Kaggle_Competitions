@@ -1,115 +1,99 @@
 # -*- coding: utf-8 -*-
 
 import pandas as pd
-from sklearn import cross_validation
-from sklearn import ensemble
-from sklearn.metrics import accuracy_score
-from sklearn import svm
-from sklearn import grid_search
 import numpy as np
-from sklearn import preprocessing
-from sklearn.kernel_approximation import RBFSampler
-from sklearn.linear_model import SGDClassifier
-from sklearn.decomposition import PCA
-from sklearn.neural_network import BernoulliRBM
+import smtplib
+from sklearn import preprocessing, cross_validation, ensemble, metrics
 
 
 
-#convert datasets to Pandas DataFrames
-train_data = pd.DataFrame(pd.read_csv('train.csv'))
-submission_test = pd.DataFrame(pd.read_csv('test.csv'))
 
-target_train = train_data['target']
-features_train = preprocessing.normalize(train_data.drop('target',1).drop('id',1).values.astype(float))
 
+def training_data():
+    #convert datasets to Pandas DataFrames
+    train_data = pd.DataFrame(pd.read_csv('train.csv'))
+    target_train = train_data['target']
+    features_train = train_data.drop('target',1).drop('id',1)
+    return (features_train, target_train)
+
+
+def submission_data():
+    submission = pd.DataFrame(pd.read_csv('test.csv'))
+    sub_id = submission['id']
+    sub_features = submission.drop('id',1)
+    return (sub_features, sub_id)
+    
+
+def transform_features(train, submission):
+    scaler = preprocessing.StandardScaler()
+    train = scaler.fit_transform(train)
+    submit = scaler.transform(submission)
+    return (train, submit)
+    
+    
+def train_test_split(features, target):
+    X_train, X_test, y_train, y_test = cross_validation.train_test_split(
+        features, target, test_size=0.2, random_state=4)
+    return {'X_train':X_train, 'X_test':X_test, 'y_train':y_train, 'y_test':y_test}
+    
+   
+def  StratifiedSplit(features, target):
+    skf = cross_validation.StratifiedKFold(target_train, n_folds=10)
+    for train_index, test_index in skf:
+        X_train, X_test = features[train_index], features[test_index]
+        y_train, y_test = target[train_index], target[test_index]
+    return {'X_train':X_train, 'X_test':X_test, 'y_train':y_train, 'y_test':y_test}
+    
+
+def classifer(X,y):
+    clf = ensemble.RandomForestClassifier(n_estimators = 500, n_jobs =-1)
+    clf.fit(X,y)
+    return clf
+    
+    
+    
+def score_model(model, X_test, y_test):
+    prediction = model.predict(X_test)
+    class_probabilities = model.predict_proba(X_test)
+    scores = cross_validation.cross_val_score(model, X_test, y_test)
+    
+    print 'Model Score: ' + str(model.score(X_test, y_test))
+    print 'Cross Validation Score: ' + " %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2)
+    print 'F1 Score: ' + str(metrics.f1_score(y_test, prediction))
+    print 'Log-Loss : ' + str(metrics.log_loss(y_test, class_probabilities))
     
 
 
-#scale data
-scaler = preprocessing.MinMaxScaler()
-features_train = scaler.fit_transform(features_train)
-
-#pca = PCA(n_components='mle', whiten=True)
-#features_train = pca.fit_transform(features_train)
-
-#convert string targets to numeric
-target_train = target_train.map(lambda x: float(x.replace('Class_',''))).values
-
-#Neural Net
-#model = BernoulliRBM()
-#model.fit_transform(features_train)
-
-X_train, X_test, y_train, y_test = cross_validation.train_test_split(
-     features_train, target_train, test_size=0.3, random_state=4)
-
-
-
-
-
-
-
-#reduce training set for speed
-#X_train = X_train[:1000]
-#y_train = y_train[:1000]
-
-
-#svm
-#clf = svm.SVC(kernel='linear')
-#clf.fit(X_train,y_train)
-
-
-
-
-
-#random forest creation
-clf = ensemble.GradientBoostingClassifier(n_estimators=250, max_depth=2, min_samples_split=1)
-clf.fit(features_train, target_train)
-predict = clf.predict(X_test)
-print accuracy_score(y_test,predict)
-scores = cross_validation.cross_val_score(clf,features_train,target_train)
-print scores.mean()
-
-
-
-
-##gridsearch svm classifer
-#parameters = {'max_depth':[1,2,3,4,5], 'min_samples_leaf':[1,2,3]}
-#grid_svm =  SGDClassifier()
-#grid_clf = grid_search.GridSearchCV(clf,parameters)
-#grid_clf.fit(X_train,y_train)
-###
-#print 'Grid Search Results: '
-#print grid_clf.best_estimator_
-
-
-
-#
-submission = submission_test['id']
-submission_test = preprocessing.normalize(submission_test.drop('id',1).values.astype(float))
-submission_test = scaler.transform(submission_test)
-submission_test = pca.transform(submission_test)
-submission_test = model.transform(submission_test)
-prediction = np.around(clf.predict_proba(submission_test),decimals=6)
-
-
-sub = pd.DataFrame({'id':submission,
-                    'Class_1':(pd.Series(np.array([x[0] for x in prediction]))),
-                    'Class_2':(pd.Series(np.array([x[1] for x in prediction]))),
-                    'Class_3':(pd.Series(np.array([x[2] for x in prediction]))),
-                    'Class_4':(pd.Series(np.array([x[3] for x in prediction]))),
-                    'Class_5':(pd.Series(np.array([x[4] for x in prediction]))),
-                    'Class_6':(pd.Series(np.array([x[5] for x in prediction]))),
-                    'Class_7':(pd.Series(np.array([x[6] for x in prediction]))),
-                    'Class_8':(pd.Series(np.array([x[7] for x in prediction]))),
-                    'Class_9':(pd.Series(np.array([x[8] for x in prediction])))})
-#print sub
-headers =['id','Class_1','Class_2','Class_3','Class_4','Class_5','Class_6','Class_7','Class_8','Class_9']
-sub.to_csv('SGDRegularized.csv', index = False, cols=headers)
-
-
+def main():
+    #pull training set
+    features, target = training_data()
+    
+    #encode target classes
+    encoder = preprocessing.LabelEncoder()
+    train_y = encoder.fit_transform(target.values).astype(float)
+    
+    #pull submission data
+    sub_features, sub_id = submission_data()
+    
+    #normalize feature sets
+    train_X, sub_X = transform_features(features.values.astype(float), sub_features.values.astype(float))
+    
+    #create training / testing splits
+    data = train_test_split(train_X, train_y)
+    stratified_data = StratifiedSplit(train_X, train_y)
+    
+    #train model
+    model = classifer(stratified_data['X_train'], stratified_data['y_train'])
+    
+    #score model
+    score_model(model, stratified_data['X_test'], stratified_data['y_test'])
     
     
 
+
+    
+if __name__ == "__main__":
+    main()
 
 
 
