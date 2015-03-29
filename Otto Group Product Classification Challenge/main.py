@@ -3,6 +3,7 @@
 import pandas as pd
 import numpy as np
 import smtplib
+import matplotlib.pyplot as plt
 from sklearn import preprocessing, cross_validation, ensemble, metrics
 
 
@@ -38,7 +39,7 @@ def train_test_split(features, target):
     
    
 def  StratifiedSplit(features, target):
-    skf = cross_validation.StratifiedKFold(target_train, n_folds=10)
+    skf = cross_validation.StratifiedKFold(target, n_folds=10)
     for train_index, test_index in skf:
         X_train, X_test = features[train_index], features[test_index]
         y_train, y_test = target[train_index], target[test_index]
@@ -46,13 +47,13 @@ def  StratifiedSplit(features, target):
     
 
 def classifer(X,y):
-    clf = ensemble.RandomForestClassifier(n_estimators = 500, n_jobs =-1)
+    clf = ensemble.RandomForestClassifier(n_estimators = 500, n_jobs =-1  )
     clf.fit(X,y)
     return clf
     
     
     
-def score_model(model, X_test, y_test):
+def score_model(model, X_test, y_test, encoder, plot=True):
     prediction = model.predict(X_test)
     class_probabilities = model.predict_proba(X_test)
     scores = cross_validation.cross_val_score(model, X_test, y_test)
@@ -60,7 +61,37 @@ def score_model(model, X_test, y_test):
     print 'Model Score: ' + str(model.score(X_test, y_test))
     print 'Cross Validation Score: ' + " %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2)
     print 'F1 Score: ' + str(metrics.f1_score(y_test, prediction))
-    print 'Log-Loss : ' + str(metrics.log_loss(y_test, class_probabilities))
+    print 'Log-Loss: ' + str(metrics.log_loss(y_test, class_probabilities))
+    print 'Important Features: '
+    print model.feature_importances_
+    
+    #calculate and plot confusion matrix
+    calculate_confusion_matrix(y_test, prediction, encoder)
+    
+
+def calculate_confusion_matrix(y_test, y_pred, encoder):
+    # Compute confusion matrix
+    cm = metrics.confusion_matrix(y_test, y_pred)
+    np.set_printoptions(precision=2)
+    # Normalize the confusion matrix by row (i.e by the number of samples
+    # in each class)
+    cm_normalized = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+    print('Normalized confusion matrix')
+    plot_confusion_matrix(cm_normalized, encoder, title='Normalized confusion matrix')
+    
+
+def plot_confusion_matrix(cm, encoder, title='Confusion matrix', cmap=plt.cm.Blues):
+    plt.figure()
+    plt.imshow(cm, interpolation='nearest', cmap=cmap)
+    plt.title(title)
+    plt.colorbar()
+    tick_marks = np.arange(len(encoder.classes_))
+    plt.xticks(tick_marks, encoder.classes_, rotation=45)
+    plt.yticks(tick_marks, encoder.classes_)
+    plt.tight_layout()
+    plt.ylabel('True label')
+    plt.xlabel('Predicted label')  
+    plt.show()
     
 
 
@@ -86,7 +117,7 @@ def main():
     model = classifer(stratified_data['X_train'], stratified_data['y_train'])
     
     #score model
-    score_model(model, stratified_data['X_test'], stratified_data['y_test'])
+    score_model(model, stratified_data['X_test'], stratified_data['y_test'], encoder)
     
     
 
