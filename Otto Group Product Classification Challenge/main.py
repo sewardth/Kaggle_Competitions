@@ -4,7 +4,8 @@ import pandas as pd
 import numpy as np
 import smtplib
 import matplotlib.pyplot as plt
-from sklearn import preprocessing, cross_validation, ensemble, metrics
+from matplotlib.colors import ListedColormap
+from sklearn import preprocessing, cross_validation, ensemble, metrics, svm
 
 
 
@@ -13,8 +14,10 @@ from sklearn import preprocessing, cross_validation, ensemble, metrics
 def training_data():
     #convert datasets to Pandas DataFrames
     train_data = pd.DataFrame(pd.read_csv('train.csv'))
+    train_data = train_data[(train_data.target == 'Class_2') | (train_data.target == 'Class_3')]
     target_train = train_data['target']
     features_train = train_data.drop('target',1).drop('id',1)
+    
     return (features_train, target_train)
 
 
@@ -28,7 +31,8 @@ def submission_data():
 def transform_features(train, submission):
     scaler = preprocessing.StandardScaler()
     train = scaler.fit_transform(train)
-    submit = scaler.transform(submission)
+    #submit = scaler.transform(submission)
+    submit = submission
     return (train, submit)
     
     
@@ -47,7 +51,7 @@ def  StratifiedSplit(features, target):
     
 
 def classifer(X,y):
-    clf = ensemble.RandomForestClassifier(n_estimators = 500, n_jobs =-1  )
+    clf = ensemble.RandomForestClassifier(n_estimators =100, n_jobs =2  )
     clf.fit(X,y)
     return clf
     
@@ -63,7 +67,18 @@ def score_model(model, X_test, y_test, encoder, plot=True):
     print 'F1 Score: ' + str(metrics.f1_score(y_test, prediction))
     print 'Log-Loss: ' + str(metrics.log_loss(y_test, class_probabilities))
     print 'Important Features: '
-    print model.feature_importances_
+    tops= sorted([(index, x) for index, x in enumerate(model.feature_importances_)], key=lambda y: y[1], reverse=True)[:11]
+    for x in tops:
+        # setup figure
+        plt.figure(figsize=(10, 8))
+
+        
+        plt.scatter(X_test[:, x[0]], X_test[:, tops[0][0]], marker='o', c=y_test)
+        plt.xlabel('feature_'+str(x[0]+1))
+        plt.ylabel(str((tops[0][0]) +1))
+        
+        plt.show()
+        
     
     #calculate and plot confusion matrix
     calculate_confusion_matrix(y_test, prediction, encoder)
@@ -92,10 +107,13 @@ def plot_confusion_matrix(cm, encoder, title='Confusion matrix', cmap=plt.cm.Blu
     plt.ylabel('True label')
     plt.xlabel('Predicted label')  
     plt.show()
+
+    
     
 
 
-def main():
+    
+if __name__ == "__main__":
     #pull training set
     features, target = training_data()
     
@@ -118,13 +136,6 @@ def main():
     
     #score model
     score_model(model, stratified_data['X_test'], stratified_data['y_test'], encoder)
-    
-    
-
-
-    
-if __name__ == "__main__":
-    main()
 
 
 
