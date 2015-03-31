@@ -16,14 +16,14 @@ def training_data():
     train_data = pd.DataFrame(pd.read_csv('train.csv'))
     #train_data = train_data[(train_data.target == 'Class_2') | (train_data.target == 'Class_3')]
     target_train = train_data['target']
-    features_train = train_data.drop('target',1).drop('id',1).drop('feat_1',1)
+    features_train = train_data.drop('target',1).drop('id',1)
     return (features_train, target_train)
  
  
 def submission_data():
     submission = pd.DataFrame(pd.read_csv('test.csv'))
     sub_id = submission['id']
-    sub_features = submission.drop('id',1).drop('feat_1',1)
+    sub_features = submission.drop('id',1)
     return (sub_features, sub_id)
     
  
