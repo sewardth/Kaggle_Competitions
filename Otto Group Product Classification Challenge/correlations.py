@@ -9,7 +9,8 @@ import pandas as pd
 
 
 class Offenders():
-    def __init__(self, data):
+    def __init__(self, data, correlation_limit=.5):
+        self.cl = correlation_limit
         features = data.corr()
         self.values = self.recursive_feature_selection(features)
         
@@ -26,7 +27,7 @@ class Offenders():
         for i, feature in enumerate(features.columns):
             correlation_map.append([feature])
             for index, value in enumerate(features[feature].values):
-                if abs(value) >= .6 and value != 1.:
+                if abs(value) >= self.cl and value != 1.:
                     correlation_map[i].append(feature_rows[index])
          
         
@@ -36,8 +37,8 @@ class Offenders():
             return [1]
         
         else:
-            bad_feature = values.pop()           
-            return [bad_feature[0]] + self.recursive_feature_selection(features.drop(bad_feature[0], axis=1))
+            bad_feature = values.pop()
+            return [bad_feature[0]] + self.recursive_feature_selection(features.drop(bad_feature[0], axis=1).drop(bad_feature[0], axis=0))
         
  
 if __name__ == "__main__":

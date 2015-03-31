@@ -18,10 +18,6 @@ def training_data():
     #train_data = train_data[(train_data.target == 'Class_2') | (train_data.target == 'Class_3') | (train_data.target == 'Class_4') ]
     target_train = train_data['target']
     features_train = train_data.drop('target',1).drop('id',1)
-     
-    #drop correlated features
-    drop_features = Offenders(features_train).stop_features()
-    features_train = features_train.drop(drop_features,axis=1)
 
     return (features_train, target_train)
  
@@ -30,8 +26,7 @@ def submission_data():
     submission = pd.DataFrame(pd.read_csv('test.csv'))
     sub_id = submission['id']
     sub_features = submission.drop('id',1)
-    drop_features = Offenders().stop_features()
-    sub_features = sub_features.drop(drop_features,axis=1)
+
     return (sub_features, sub_id)
     
  
@@ -44,7 +39,7 @@ def transform_features(train, submission, principal_components=False):
     #apply PCA
     if principal_components:
         print 'Fitting Principal Components'
-        pca = decomposition.PCA(n_components = 'mle' )
+        pca = decomposition.PCA(n_components = 'mle', whiten=True )
         train = pca.fit_transform(train)
         submit = pca.transform(submit)
     
@@ -151,7 +146,18 @@ def file_output(model, sub_features, sub_ids, title, encoder):
     dataframe.index.name = 'id'
     path = '\Submissions\{}.csv'.format(title)
     dataframe.to_csv(path)
+
+
+def remove_correlations(features, sub_features, cl=.5):
+    #find correlations
+    offenders = Offenders(features, correlation_limit=cl)
+    drop_features = offenders.stop_features()
     
+    #transform feature sets
+    features = features.drop(drop_features,axis=1)
+    sub_features = sub_features.drop(drop_features, axis=1)
+    
+    return (features, sub_features)
     
  
 if __name__ == "__main__":
@@ -164,6 +170,9 @@ if __name__ == "__main__":
     
     #pull submission data
     sub_features, sub_id = submission_data()
+    
+    #remove correlations
+    features, sub_features = remove_correlations(features, sub_features, cl=.8)
     
     #normalize feature sets
     train_X, sub_X = transform_features(features.values.astype(float), sub_features.values.astype(float), principal_components=True)
