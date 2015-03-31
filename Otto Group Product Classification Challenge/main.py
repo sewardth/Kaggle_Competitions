@@ -59,11 +59,12 @@ def classifer(X,y):
     return clf
 
 
-def score_model(model, X_test, y_test, encoder, plot=True):
+def score_model(model, X_test, y_test, X_train, y_train, encoder, plot=True):
     prediction = model.predict(X_test)
     class_probabilities = model.predict_proba(X_test)
     scores = cross_validation.cross_val_score(model, X_test, y_test)
-    print 'Model Score: ' + str(model.score(X_test, y_test))
+    print 'Model Test Score: ' + str(model.score(X_test, y_test))
+    print 'Model Training Score: ' + str(model.score(X_Train, y_train))
     print 'Cross Validation Score: ' + " %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2)
     print 'F1 Score: ' + str(metrics.f1_score(y_test, prediction))
     print 'Log-Loss: ' + str(metrics.log_loss(y_test, class_probabilities))
@@ -155,12 +156,11 @@ if __name__ == "__main__":
     
 
     
-    
     #train model
     model = classifer(stratified_data['X_train'], stratified_data['y_train'])
     
     #score model
-    score_model(model, stratified_data['X_test'], stratified_data['y_test'], encoder)
+    score_model(model, stratified_data['X_test'], stratified_data['y_test'], stratified_data['X_train'], stratified_data['y_train'],encoder)
     
     #Grid Search
     #params ={'C':[1,10],'kernel':['rbf','linear'], 'gamma':[.01,0.0,.1],'class_weight':['auto',None]}
