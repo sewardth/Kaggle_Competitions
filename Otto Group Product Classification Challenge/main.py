@@ -14,7 +14,7 @@ from sklearn import preprocessing, cross_validation, ensemble, metrics, svm, gri
 def training_data():
     #convert datasets to Pandas DataFrames
     train_data = pd.DataFrame(pd.read_csv('train.csv'))
-    #train_data = train_data[(train_data.target == 'Class_2') | (train_data.target == 'Class_3')]
+    #train_data = train_data[(train_data.target == 'Class_2') | (train_data.target == 'Class_3') | (train_data.target == 'Class_4') ]
     target_train = train_data['target']
     features_train = train_data.drop('target',1).drop('id',1)
     return (features_train, target_train)
@@ -54,7 +54,7 @@ def StratifiedSplit(features, target):
  
  
 def classifer(X,y):
-    clf = svm.SVC(kernel='rbf', C=10, gamma =0.0, class_weight = None, probability = True)
+    clf = svm.SVC(kernel='rbf', C=10, gamma =0.01, class_weight = None, probability = True)
     clf.fit(X,y)
     return clf
 
@@ -81,7 +81,6 @@ def calculate_confusion_matrix(y_test, y_pred, encoder):
     # Normalize the confusion matrix by row (i.e by the number of samples
     # in each class)
     cm_normalized = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
-    print('Normalized confusion matrix')
     plot_confusion_matrix(cm_normalized, encoder, title='Normalized confusion matrix')
 
 
@@ -113,11 +112,21 @@ def parameter_tune(model, parameters, X_train, y_train):
 
 
 
-def key_features(X_train, y_train, sub):
+def key_features(X_train, y_train, sub, varience_test=True):
+    print 'Features before reduction: ' + str(len(X_train[0]))
+    if varience_test:
+        #remove features with low variance
+        sel = feature_selection.VarianceThreshold(threshold=(.8 * (1 - .8)))
+        X_train = sel.fit_transform(X_train)
+        sub = sel.transform(sub)
+        print 'Features after variance reduction: ' +str(len(X_train[0]))
+    
     estimator = linear_model.SGDClassifier(n_jobs =-1, class_weight ='auto')
     selector = feature_selection.RFECV(estimator, step=1, cv=5)
     features = selector.fit_transform(X_train, y_train)
     submission = selector.transform(sub)
+    
+    print 'Features after recursive elimination: ' + str(len(features[0]))
     
     return (features, submission)
     
@@ -146,15 +155,13 @@ if __name__ == "__main__":
     #normalize feature sets
     train_X, sub_X = transform_features(features.values.astype(float), sub_features.values.astype(float))
     
-    #apply feature reduction
-    #train_X, sub_X = key_features(train_X, train_y, sub_X)
-    
+    #Search for key features
+    train_X, sub_X = key_features(train_X, train_y, sub_X)
     
     #create training / testing splits
     data = train_test_split(train_X, train_y)
     stratified_data = StratifiedSplit(train_X, train_y)
     
-
     
     #train model
     model = classifer(stratified_data['X_train'], stratified_data['y_train'])
@@ -166,4 +173,4 @@ if __name__ == "__main__":
     #params ={'C':[1,10],'kernel':['rbf','linear'], 'gamma':[.01,0.0,.1],'class_weight':['auto',None]}
     #parameter_tune(svm.SVC(), params, data['X_train'][:10000], data['y_train'][:10000])
      
-    file_output(model, sub_X, sub_id, 'Optimized SVM', encoder)
+    #file_output(model, sub_X, sub_id, 'Optimized SVM', encoder)
