@@ -16,14 +16,14 @@ def training_data():
     train_data = pd.DataFrame(pd.read_csv('train.csv'))
     #train_data = train_data[(train_data.target == 'Class_2') | (train_data.target == 'Class_3')]
     target_train = train_data['target']
-    features_train = train_data.drop('target',1).drop('id',1)
+    features_train = train_data.drop('target',1).drop('id',1).drop('feat_1',1)
     return (features_train, target_train)
  
  
 def submission_data():
     submission = pd.DataFrame(pd.read_csv('test.csv'))
     sub_id = submission['id']
-    sub_features = submission.drop('id',1)
+    sub_features = submission.drop('id',1).drop('feat_1',1)
     return (sub_features, sub_id)
     
  
@@ -64,7 +64,7 @@ def score_model(model, X_test, y_test, X_train, y_train, encoder, plot=True):
     class_probabilities = model.predict_proba(X_test)
     scores = cross_validation.cross_val_score(model, X_test, y_test)
     print 'Model Test Score: ' + str(model.score(X_test, y_test))
-    print 'Model Training Score: ' + str(model.score(X_Train, y_train))
+    print 'Model Training Score: ' + str(model.score(X_train, y_train))
     print 'Cross Validation Score: ' + " %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2)
     print 'F1 Score: ' + str(metrics.f1_score(y_test, prediction))
     print 'Log-Loss: ' + str(metrics.log_loss(y_test, class_probabilities))
