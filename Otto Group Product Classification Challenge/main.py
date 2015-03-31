@@ -127,7 +127,7 @@ def file_output(model, sub_features, sub_ids, title, encoder):
     prediction = model.predict_proba(sub_features)
     dataframe = pd.DataFrame.from_records(prediction, index=sub_ids, columns=columns)
     dataframe.index.name = 'id'
-    path = 'Submissions\{}\.csv'.format(title)
+    path = '\Submissions\{}.csv'.format(title)
     dataframe.to_csv(path)
     
     
@@ -147,7 +147,7 @@ if __name__ == "__main__":
     train_X, sub_X = transform_features(features.values.astype(float), sub_features.values.astype(float))
     
     #apply feature reduction
-    train_X, sub_X = key_features(train_X, train_y, sub_X)
+    #train_X, sub_X = key_features(train_X, train_y, sub_X)
     
     
     #create training / testing splits
