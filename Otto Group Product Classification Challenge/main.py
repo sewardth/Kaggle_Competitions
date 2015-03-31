@@ -5,6 +5,7 @@ import numpy as np
 import smtplib
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
+from correlations import Offenders
 from sklearn import preprocessing, cross_validation, ensemble, metrics, svm, grid_search, decomposition, feature_selection, linear_model
  
  
@@ -17,6 +18,11 @@ def training_data():
     #train_data = train_data[(train_data.target == 'Class_2') | (train_data.target == 'Class_3') | (train_data.target == 'Class_4') ]
     target_train = train_data['target']
     features_train = train_data.drop('target',1).drop('id',1)
+     
+    #drop correlated features
+    drop_features = Offenders(features_train).stop_features()
+    features_train = features_train.drop(drop_features,axis=1)
+
     return (features_train, target_train)
  
  
@@ -24,18 +30,24 @@ def submission_data():
     submission = pd.DataFrame(pd.read_csv('test.csv'))
     sub_id = submission['id']
     sub_features = submission.drop('id',1)
+    drop_features = Offenders().stop_features()
+    sub_features = sub_features.drop(drop_features,axis=1)
     return (sub_features, sub_id)
     
  
-def transform_features(train, submission):
-    #apply PCA
-    pca = decomposition.PCA(n_components = 'mle' )
-    
+def transform_features(train, submission, principal_components=False):
     #scale data
-    scaler = preprocessing.StandardScaler()
-    train = pca.fit_transform(scaler.fit_transform(train))
-    submit = pca.transform(scaler.transform(submission))
-
+    scaler = preprocessing.StandardScaler()    
+    train = scaler.fit_transform(train)
+    submit = scaler.transform(submission)
+    
+    #apply PCA
+    if principal_components:
+        print 'Fitting Principal Components'
+        pca = decomposition.PCA(n_components = 'mle' )
+        train = pca.fit_transform(train)
+        submit = pca.transform(submit)
+    
     return (train, submit)
     
     
@@ -55,6 +67,7 @@ def StratifiedSplit(features, target):
  
 def classifer(X,y):
     clf = svm.SVC(kernel='rbf', C=10, gamma =0.01, class_weight = None, probability = True)
+    #clf = ensemble.RandomForestClassifier(n_estimators =200, n_jobs =-1)
     clf.fit(X,y)
     return clf
 
@@ -153,7 +166,7 @@ if __name__ == "__main__":
     sub_features, sub_id = submission_data()
     
     #normalize feature sets
-    train_X, sub_X = transform_features(features.values.astype(float), sub_features.values.astype(float))
+    train_X, sub_X = transform_features(features.values.astype(float), sub_features.values.astype(float), principal_components=True)
     
     #Search for key features
     train_X, sub_X = key_features(train_X, train_y, sub_X)
