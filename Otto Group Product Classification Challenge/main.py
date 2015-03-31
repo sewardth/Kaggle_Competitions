@@ -120,6 +120,15 @@ def key_features(X_train, y_train, sub):
     
     return (features, submission)
     
+
+def file_output(model, sub_features, sub_ids, title, encoder):
+    columns = encoder.classes_
+    prediction = model.predict_proba(sub_features)
+    dataframe = pd.DataFrame.from_records(prediction, index=sub_ids, columns=columns)
+    dataframe.index.name = 'id'
+    path = 'Submissions\{}\.csv'.format(title)
+    dataframe.to_csv(path)
+    
     
  
 if __name__ == "__main__":
@@ -136,13 +145,15 @@ if __name__ == "__main__":
     #normalize feature sets
     train_X, sub_X = transform_features(features.values.astype(float), sub_features.values.astype(float))
     
+    #apply feature reduction
+    train_X, sub_X = key_features(train_X, train_y, sub_X)
+    
     
     #create training / testing splits
     data = train_test_split(train_X, train_y)
     stratified_data = StratifiedSplit(train_X, train_y)
     
-    #apply feature reduction
-    train_X, sub_X = key_features(stratified_data['X_train'], stratified_data['y_train'])
+
     
     
     #train model
@@ -155,4 +166,4 @@ if __name__ == "__main__":
     #params ={'C':[1,10],'kernel':['rbf','linear'], 'gamma':[.01,0.0,.1],'class_weight':['auto',None]}
     #parameter_tune(svm.SVC(), params, data['X_train'][:10000], data['y_train'][:10000])
      
- 
+    file_output(model, sub_X, sub_id, 'Optimized SVM', encoder)
