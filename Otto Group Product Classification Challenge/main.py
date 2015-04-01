@@ -39,7 +39,7 @@ def transform_features(train, submission, principal_components=False):
     #apply PCA
     if principal_components:
         print 'Fitting Principal Components'
-        pca = decomposition.PCA(n_components = 'mle', whiten=True )
+        pca = decomposition.PCA(n_components = 'mle' )
         train = pca.fit_transform(train)
         submit = pca.transform(submit)
     
@@ -61,8 +61,9 @@ def StratifiedSplit(features, target):
  
  
 def classifer(X,y):
-    clf = svm.SVC(kernel='rbf', C=10, gamma =0.01, class_weight = None, probability = True)
+    #clf = svm.SVC(kernel='rbf', C=10, gamma =0.01, class_weight = None, probability = True)
     #clf = ensemble.RandomForestClassifier(n_estimators =200, n_jobs =-1)
+    #clf = ensemble.GradientBoostingClassifier()
     clf.fit(X,y)
     return clf
 
@@ -172,13 +173,13 @@ if __name__ == "__main__":
     sub_features, sub_id = submission_data()
     
     #remove correlations
-    features, sub_features = remove_correlations(features, sub_features, cl=.8)
+    #features, sub_features = remove_correlations(features, sub_features, cl=.8)
     
     #normalize feature sets
-    train_X, sub_X = transform_features(features.values.astype(float), sub_features.values.astype(float), principal_components=True)
+    train_X, sub_X = transform_features(features.values.astype(float), sub_features.values.astype(float), principal_components=False)
     
     #Search for key features
-    train_X, sub_X = key_features(train_X, train_y, sub_X)
+    #train_X, sub_X = key_features(train_X, train_y, sub_X)
     
     #create training / testing splits
     data = train_test_split(train_X, train_y)
@@ -186,13 +187,13 @@ if __name__ == "__main__":
     
     
     #train model
-    model = classifer(stratified_data['X_train'], stratified_data['y_train'])
+    #model = classifer(stratified_data['X_train'], stratified_data['y_train'])
     
     #score model
-    score_model(model, stratified_data['X_test'], stratified_data['y_test'], stratified_data['X_train'], stratified_data['y_train'],encoder)
+    #score_model(model, stratified_data['X_test'], stratified_data['y_test'], stratified_data['X_train'], stratified_data['y_train'],encoder)
     
     #Grid Search
-    #params ={'C':[1,10],'kernel':['rbf','linear'], 'gamma':[.01,0.0,.1],'class_weight':['auto',None]}
-    #parameter_tune(svm.SVC(), params, data['X_train'][:10000], data['y_train'][:10000])
+    params ={'learning_rate':[.1,.01,1],'n_estimators':[100,250],'max_depth':[1,2,3,5]}
+    parameter_tune(ensemble.GradientBoostingClassifier(), params, data['X_train'][:10000], data['y_train'][:10000])
      
     #file_output(model, sub_X, sub_id, 'Optimized SVM', encoder)
