@@ -61,8 +61,8 @@ def StratifiedSplit(features, target):
  
  
 def classifer(X,y):
-    #clf = svm.SVC(kernel='rbf', C=10, gamma =0.01, class_weight = None, probability = True)
-    #clf = ensemble.RandomForestClassifier(n_estimators =200, n_jobs =-1)
+    clf = svm.SVC(kernel='rbf', C=45, gamma =0.00, class_weight = 'auto', probability = True, tol=0.01)
+    #clf = ensemble.RandomForestClassifier(n_estimators =1000, n_jobs =-1,  min_samples_split=1)
     #clf = ensemble.GradientBoostingClassifier()
     clf.fit(X,y)
     return clf
@@ -145,8 +145,8 @@ def file_output(model, sub_features, sub_ids, title, encoder):
     prediction = model.predict_proba(sub_features)
     dataframe = pd.DataFrame.from_records(prediction, index=sub_ids, columns=columns)
     dataframe.index.name = 'id'
-    path = '\Submissions\{}.csv'.format(title)
-    dataframe.to_csv(path)
+    #path = '..\Submissions\{}.csv'.format(title)
+    dataframe.to_csv('Optimized SVM - No PCA.csv')
 
 
 def remove_correlations(features, sub_features, cl=.5):
@@ -173,7 +173,7 @@ if __name__ == "__main__":
     sub_features, sub_id = submission_data()
     
     #remove correlations
-    #features, sub_features = remove_correlations(features, sub_features, cl=.8)
+    #features, sub_features = remove_correlations(features, sub_features, cl=.7)
     
     #normalize feature sets
     train_X, sub_X = transform_features(features.values.astype(float), sub_features.values.astype(float), principal_components=False)
@@ -187,13 +187,13 @@ if __name__ == "__main__":
     
     
     #train model
-    #model = classifer(stratified_data['X_train'], stratified_data['y_train'])
+    model = classifer(stratified_data['X_train'], stratified_data['y_train'])
     
     #score model
-    #score_model(model, stratified_data['X_test'], stratified_data['y_test'], stratified_data['X_train'], stratified_data['y_train'],encoder)
+    score_model(model, stratified_data['X_test'], stratified_data['y_test'], stratified_data['X_train'], stratified_data['y_train'],encoder)
     
     #Grid Search
-    params ={'learning_rate':[.1,.01,1],'n_estimators':[100,250],'max_depth':[1,2,3,5]}
-    parameter_tune(ensemble.GradientBoostingClassifier(), params, data['X_train'][:10000], data['y_train'][:10000])
+    #params ={'C':[45], 'kernel':['rbf'], 'class_weight':['auto'],'gamma':[0.0],'tol':[1e-2,.1]}
+    #parameter_tune(svm.SVC(), params, data['X_train'], data['y_train'])
      
-    #file_output(model, sub_X, sub_id, 'Optimized SVM', encoder)
+    #file_output(model, sub_X, sub_id, 'Optimized SVM -C50', encoder)
