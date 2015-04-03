@@ -61,9 +61,9 @@ def StratifiedSplit(features, target):
  
  
 def classifer(X,y):
-    clf = svm.SVC(kernel='rbf', C=45, gamma =0.00, class_weight = 'auto', probability = True, tol=0.01)
+    #clf = svm.SVC(kernel='rbf', C=45, gamma =0.00, class_weight = 'auto', probability = True, tol=0.01)
     #clf = ensemble.RandomForestClassifier(n_estimators =1000, n_jobs =-1,  min_samples_split=1)
-    #clf = ensemble.GradientBoostingClassifier()
+    clf = ensemble.GradientBoostingClassifier(n_estimators=200, min_samples_split=1,max_features=None, max_depth=6)
     clf.fit(X,y)
     return clf
 
@@ -193,7 +193,7 @@ if __name__ == "__main__":
     score_model(model, stratified_data['X_test'], stratified_data['y_test'], stratified_data['X_train'], stratified_data['y_train'],encoder)
     
     #Grid Search
-    #params ={'C':[45], 'kernel':['rbf'], 'class_weight':['auto'],'gamma':[0.0],'tol':[1e-2,.1]}
-    #parameter_tune(svm.SVC(), params, data['X_train'], data['y_train'])
+    #params ={'max_depth':[6,10], 'max_features':[None], 'min_samples_split':[1]}
+    #parameter_tune(ensemble.GradientBoostingClassifier(), params, data['X_train'], data['y_train'])
      
     #file_output(model, sub_X, sub_id, 'Optimized SVM -C50', encoder)
