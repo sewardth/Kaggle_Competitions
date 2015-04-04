@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
 from correlations import Offenders
 from sklearn import preprocessing, cross_validation, ensemble, metrics, svm, grid_search, decomposition, feature_selection, linear_model
- 
+import math
  
  
  
@@ -63,7 +63,7 @@ def StratifiedSplit(features, target):
 def classifer(X,y):
     #clf = svm.SVC(kernel='rbf', C=45, gamma =0.00, class_weight = 'auto', probability = True, tol=0.01)
     #clf = ensemble.RandomForestClassifier(n_estimators =1000, n_jobs =-1,  min_samples_split=1)
-    clf = ensemble.GradientBoostingClassifier(n_estimators=200, min_samples_split=1,max_features=None, max_depth=6)
+    clf = ensemble.GradientBoostingClassifier(n_estimators=300, min_samples_split=1,max_features=None, max_depth=6)
     clf.fit(X,y)
     return clf
 
@@ -110,7 +110,7 @@ def plot_confusion_matrix(cm, encoder, title='Confusion matrix', cmap=plt.cm.Blu
 
  
 def parameter_tune(model, parameters, X_train, y_train):
-    grid_clf = grid_search.GridSearchCV(model,parameters, n_jobs =-1)
+    grid_clf = grid_search.GridSearchCV(model,parameters, n_jobs =-1, scoring='log_loss')
     grid_clf.fit(X_train,y_train)
     #print 'Grid Search Results: '
     #print grid_clf.best_estimator_
@@ -160,10 +160,25 @@ def remove_correlations(features, sub_features, cl=.5):
     
     return (features, sub_features)
     
+def feature_engineering(features, sub_features, quads=True):
+    new_features = features
+    new_sub_features = sub_features
+    
+    if quads:    
+        #add quadratic terms to data
+        quad_start = 100
+        for feat in features.columns:
+            new_features['feat_'+str(quad_start)] = features[feat].map(lambda x: x**2)
+            new_sub_features['feat_'+str(quad_start)] = sub_features[feat].map(lambda x: x**2)
+            quad_start +=1
+
+
+    return (new_features, new_sub_features)
  
 if __name__ == "__main__":
     #pull training set
     features, target = training_data()
+    
     
     #encode target classes
     encoder = preprocessing.LabelEncoder()
@@ -171,6 +186,9 @@ if __name__ == "__main__":
     
     #pull submission data
     sub_features, sub_id = submission_data()
+    
+    #engineer features
+    features, sub_features = feature_engineering(features, sub_features, quads=True)
     
     #remove correlations
     #features, sub_features = remove_correlations(features, sub_features, cl=.7)
@@ -187,13 +205,15 @@ if __name__ == "__main__":
     
     
     #train model
-    model = classifer(stratified_data['X_train'], stratified_data['y_train'])
+    #model = classifer(stratified_data['X_train'], stratified_data['y_train'])
+    
+    #Grid Search
+    params ={'max_depth':[3,6,10], 'max_features':[None,'auto'], 'min_samples_split':[1,2]}
+    model = parameter_tune(ensemble.GradientBoostingClassifier(), params, stratified_data['X_train'], stratified_data['y_train'])
     
     #score model
     score_model(model, stratified_data['X_test'], stratified_data['y_test'], stratified_data['X_train'], stratified_data['y_train'],encoder)
     
-    #Grid Search
-    #params ={'max_depth':[6,10], 'max_features':[None], 'min_samples_split':[1]}
-    #parameter_tune(ensemble.GradientBoostingClassifier(), params, data['X_train'], data['y_train'])
+
      
     #file_output(model, sub_X, sub_id, 'Optimized SVM -C50', encoder)
