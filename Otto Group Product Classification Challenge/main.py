@@ -63,7 +63,7 @@ def StratifiedSplit(features, target):
 def classifer(X,y):
     #clf = svm.SVC(kernel='rbf', C=45, gamma =0.00, class_weight = 'auto', probability = True, tol=0.01)
     #clf = ensemble.RandomForestClassifier(n_estimators =1000, n_jobs =-1,  min_samples_split=1)
-    clf = ensemble.GradientBoostingClassifier(n_estimators=300, min_samples_split=1,max_features=None, max_depth=6)
+    clf = ensemble.GradientBoostingClassifier(n_estimators=200, min_samples_split=2,max_features=None, max_depth=6)
     clf.fit(X,y)
     return clf
 
@@ -146,7 +146,7 @@ def file_output(model, sub_features, sub_ids, title, encoder):
     dataframe = pd.DataFrame.from_records(prediction, index=sub_ids, columns=columns)
     dataframe.index.name = 'id'
     #path = '..\Submissions\{}.csv'.format(title)
-    dataframe.to_csv('Optimized SVM - No PCA.csv')
+    dataframe.to_csv('Optimized GBM - Full Training.csv')
 
 
 def remove_correlations(features, sub_features, cl=.5):
@@ -159,6 +159,7 @@ def remove_correlations(features, sub_features, cl=.5):
     sub_features = sub_features.drop(drop_features, axis=1)
     
     return (features, sub_features)
+    
     
 def feature_engineering(features, sub_features, quads=True):
     new_features = features
@@ -188,7 +189,7 @@ if __name__ == "__main__":
     sub_features, sub_id = submission_data()
     
     #engineer features
-    features, sub_features = feature_engineering(features, sub_features, quads=True)
+    #features, sub_features = feature_engineering(features, sub_features, quads=True)
     
     #remove correlations
     #features, sub_features = remove_correlations(features, sub_features, cl=.7)
@@ -207,12 +208,15 @@ if __name__ == "__main__":
     #train model
     #model = classifer(stratified_data['X_train'], stratified_data['y_train'])
     
+    #fit model to full training set
+    #model = classifer(train_X, train_y)
+    
     #Grid Search
-    params ={'max_depth':[3,6,10], 'max_features':[None,'auto'], 'min_samples_split':[1,2]}
-    model = parameter_tune(ensemble.GradientBoostingClassifier(), params, stratified_data['X_train'], stratified_data['y_train'])
+    params ={'max_depth':[4,6,8], 'max_features':[None,'auto',.3], 'min_samples_leaf':[3,5,9,17],'learning_rate':[0.1,0.05,0.01,.001]}
+    model = parameter_tune(ensemble.GradientBoostingClassifier(n_estimators=1000), params, stratified_data['X_train'], stratified_data['y_train'])
     
     #score model
-    score_model(model, stratified_data['X_test'], stratified_data['y_test'], stratified_data['X_train'], stratified_data['y_train'],encoder)
+    #score_model(model, stratified_data['X_test'], stratified_data['y_test'], stratified_data['X_train'], stratified_data['y_train'],encoder)
     
 
      
